@@ -46,9 +46,9 @@ void flush_stdin() {
   substitui todos os pontos decimais inválidos para o válido sob o idioma do usuário,
   impede que o conteúdo do buffer ultrapasse o limite desejado, e converte o resultado para float, e o retorna.
 */
-bool input(char *message, char *buf, char decimal_point) {
+bool input(char *message, char *buf, char decimal_point, size_t buf_len) {
   printf("%s", message);
-  if (fgets(buf, MAX_LENGTH * sizeof(char), stdin) == NULL) { // fgets é mais seguro que gets, e impede buffer overflow, erro caso standard input não existir
+  if (fgets(buf, buf_len, stdin) == NULL) { // fgets é mais seguro que gets, e impede buffer overflow, erro caso standard input não existir
     printf("%s", error_message_no_stdin);
     return false; // retornar false em caso de erro.
   } else {
@@ -92,21 +92,21 @@ typedef struct {
 } product;
 
 double calcular_frete(enum regiao regiao, double peso) {
-    if (peso <= 2.0f) {
+    if (peso <= 2.0) {
         switch(regiao) {
-            case sul: return 30.0f;  // sul
-            case sudeste: return 25.0f;  // sudeste
-            case norte: return 35.0f;  // norte
-            case nordeste: return 40.0f;  // nordeste
-            default: return 0.0f;
+            case sul: return 30.0;  // sul
+            case sudeste: return 25.0;  // sudeste
+            case norte: return 35.0;  // norte
+            case nordeste: return 40.0;  // nordeste
+            default: return 0.0;
         }
     } else {
         switch(regiao) {
-            case sul: return 50.0f;  // sul >2kg
-            case sudeste: return 45.0f;  // sudeste >2kg
-            case norte: return 55.0f;  // norte >2kg
-            case nordeste: return 60.0f;  // nordeste >2kg
-            default: return 0.0f;
+            case sul: return 50.0;  // sul >2kg
+            case sudeste: return 45.0;  // sudeste >2kg
+            case norte: return 55.0;  // norte >2kg
+            case nordeste: return 60.0;  // nordeste >2kg
+            default: return 0.0;
         }
     }
 }
@@ -120,29 +120,30 @@ int main() {
     setlocale(LC_ALL, "");
     
     char d_point = localeconv()->decimal_point[0];
- 
+    printf("ponto decimal do idioma atual: \"%c\"\n", d_point);
+    
     product prod;
     
     char codigo[MAX_LENGTH] = "";
     while (strlen(codigo) == 0)
-      input("codigo do produto: ", codigo, d_point);    
+      input("codigo do produto: ", codigo, d_point, MAX_LENGTH);    
     strcpy(prod.codigo, codigo);
     
     char nome[MAX_LENGTH] = "";
     while (strlen(nome) == 0)
-      input("nome do produto: ", nome, d_point);
+      input("nome do produto: ", nome, d_point, MAX_LENGTH);
     strcpy(prod.nome, nome);
     
     char peso_buf[MAX_LENGTH] = "";
     while (!is_number(peso_buf, d_point) || strlen(peso_buf) == 0)
-      input("peso (kg): ", peso_buf, d_point);
+      input("peso (kg): ", peso_buf, d_point, MAX_LENGTH);
 
     char *end = NULL;
     prod.peso = strtod(peso_buf, &end);
     
     char preco_buf[MAX_LENGTH];
     while (!is_number(preco_buf, d_point) || strlen(preco_buf) == 0)
-      input("preço unitário (R$): ", preco_buf, d_point);
+      input("preço unitário (R$): ", preco_buf, d_point, MAX_LENGTH);
 
     prod.preco = strtod(preco_buf, &end);
     
@@ -152,14 +153,14 @@ int main() {
       printf("[%d] %s\t", i+1, regioes[i]);
     printf("\n");
     
-    char regiao_buf[MAX_LENGTH];
+    char regiao_buf[9];
     while (strlen(regiao_buf) == 0 || !is_number(regiao_buf, d_point) || !regiao_valida(prod.regiao)){
-      input("escolha (1-4): ", regiao_buf, d_point);
+      input("escolha (1-4): ", regiao_buf, d_point, 9);
       prod.regiao = strtod(regiao_buf, &end) - 1; // compensar pelo começo sendo 1 e não 0
     }
     
-    float frete = calcular_frete(prod.regiao, prod.peso);
-    float total = prod.preco + frete;
+    double frete = calcular_frete(prod.regiao, prod.peso);
+    double total = prod.preco + frete;
     
     time_t agora = time(NULL);
     struct tm* data_compra = localtime(&agora);
